@@ -85,7 +85,6 @@ public abstract class BaseCommand {
     String conditions;
 
     private ExceptionHandler exceptionHandler = null;
-    CommandOperationContext lastCommandOperationContext;
     private String parentSubcommand;
 
     public BaseCommand() {}
@@ -403,7 +402,6 @@ public abstract class BaseCommand {
         Stack<CommandOperationContext> contexts = CommandManager.commandOperationContext.get();
         CommandOperationContext context = this.manager.createCommandOperationContext(this, issuer, commandLabel, args, isAsync);
         contexts.push(context);
-        lastCommandOperationContext = context;
         execSubcommand = null;
         execLabel = commandLabel;
         origArgs = args;
