@@ -78,7 +78,7 @@ public class BungeeRootCommand extends Command implements RootCommand, TabExecut
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        execute(manager.getCommandIssuer(sender), getName(), args);
+        execute(manager.getCommandIssuer(sender), getName(), args).consumeLastCommandOperation();
     }
 
     @Override

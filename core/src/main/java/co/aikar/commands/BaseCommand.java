@@ -409,6 +409,12 @@ public abstract class BaseCommand {
         origArgs = args;
         return context;
     }
+    
+    public CommandOperationContext consumeLastCommandOperation() {
+        CommandOperationContext context = lastCommandOperationContext;
+        lastCommandOperationContext = null;
+        return context;
+    }
 
     public CommandIssuer getCurrentCommandIssuer() {
         return CommandManager.getCurrentCommandIssuer();

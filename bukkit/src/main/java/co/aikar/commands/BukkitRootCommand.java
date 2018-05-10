@@ -60,7 +60,7 @@ public class BukkitRootCommand extends Command implements RootCommand {
 
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-        execute(manager.getCommandIssuer(sender), commandLabel, args);
+        execute(manager.getCommandIssuer(sender), commandLabel, args).consumeLastCommandOperation();
         return true;
     }
 
