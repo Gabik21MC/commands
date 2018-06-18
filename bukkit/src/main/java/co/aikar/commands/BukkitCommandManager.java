@@ -46,6 +46,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -173,6 +174,9 @@ public class BukkitCommandManager extends CommandManager<
         return locales;
     }
 
+    public Collection<BukkitRootCommand> getRegisteredCommands() {
+        return registeredCommands.values();
+    }
 
     @Override
     public boolean hasRegisteredCommands() {

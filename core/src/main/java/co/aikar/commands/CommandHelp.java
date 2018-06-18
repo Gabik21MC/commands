@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class CommandHelp {
@@ -46,7 +47,7 @@ public class CommandHelp {
     private HelpEntry selectedEntry;
     private int totalResults;
     private int totalPages;
-    private boolean lastPage;
+    private boolean lastPage = true;
 
     public CommandHelp(CommandManager manager, RootCommand rootCommand, CommandIssuer issuer) {
         this.manager = manager;
@@ -58,6 +59,12 @@ public class CommandHelp {
 
         SetMultimap<String, RegisteredCommand> subCommands = rootCommand.getSubCommands();
         Set<RegisteredCommand> seen = new HashSet<>();
+        
+        if (!subCommands.containsKey("help")) {
+            helpEntries.add(new HelpEntry(this, rootCommand.getDefaultRegisteredCommand()));
+            seen.add(rootCommand.getDefaultRegisteredCommand());
+        }
+        
         subCommands.entries().forEach(e -> {
             String key = e.getKey();
             if (key.equals(BaseCommand.DEFAULT) || key.equals(BaseCommand.CATCHUNKNOWN)) {
@@ -132,16 +139,14 @@ public class CommandHelp {
             return;
         }
 
-        List<HelpEntry> helpEntries = getHelpEntries();
-        Iterator<HelpEntry> results = helpEntries.stream()
+        List<HelpEntry> results = getHelpEntries().stream()
                 .filter(HelpEntry::shouldShow)
-                .sorted(Comparator.comparingInt(helpEntry -> helpEntry.getSearchScore() * -1)).iterator();
-        if (!results.hasNext()) {
+                .sorted(Comparator.comparingInt(helpEntry -> helpEntry.getSearchScore() * -1)).collect(Collectors.toList());
+        if (results.isEmpty()) {
             issuer.sendMessage(MessageType.ERROR, MessageKeys.NO_COMMAND_MATCHED_SEARCH, "{search}", ACFUtil.join(this.search, " "));
-            helpEntries = getHelpEntries();
-            results = helpEntries.iterator();
+            return;
         }
-        this.totalResults = helpEntries.size();
+        this.totalResults = results.size();
         int min = (this.page - 1) * this.perPage; // TODO: per page configurable?
         int max = min + this.perPage;
         this.totalPages = (int) Math.ceil((float) totalResults / (float) this.perPage);
@@ -152,9 +157,11 @@ public class CommandHelp {
         }
 
         List<HelpEntry> printEntries = new ArrayList<>();
-        while (results.hasNext()) {
-            HelpEntry e = results.next();
+        Iterator<HelpEntry> resultItr = results.iterator();
+        while (resultItr.hasNext()) {
+            HelpEntry e = resultItr.next();
             if (i >= max) {
+                this.lastPage = false;
                 break;
             }
             if (i++ < min) {
@@ -162,7 +169,6 @@ public class CommandHelp {
             }
             printEntries.add(e);
         }
-        this.lastPage = !(min > 0 || results.hasNext());
 
         if (search == null) {
             formatter.showAllResults(this, printEntries);

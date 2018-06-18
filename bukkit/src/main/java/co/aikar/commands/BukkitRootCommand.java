@@ -68,7 +68,7 @@ public class BukkitRootCommand extends Command implements RootCommand {
         if (this.defCommand == null || !command.subCommands.get(BaseCommand.DEFAULT).isEmpty()) {
             this.defCommand = command;
             this.setPermission(command.permission);
-            //this.setDescription(command.getDescription());
+            this.setDescription(command.description);
             //this.setUsage(command.getUsage());
         }
         addChildShared(this.children, this.subCommands, command);
