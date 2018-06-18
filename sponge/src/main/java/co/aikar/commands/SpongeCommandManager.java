@@ -34,6 +34,8 @@ import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,6 +161,11 @@ public class SpongeCommandManager extends CommandManager<
         return new SpongeRegisteredCommand(command, cmdName, method, prefSubCommand);
     }
 
+    @Override
+    public Collection<RootCommand> getRegisteredRootCommands() {
+        return Collections.unmodifiableCollection(registeredCommands.values());
+    }
+    
     @Override
     public void log(final LogLevel level, final String message, final Throwable throwable) {
         Logger logger = this.plugin.getLogger();
