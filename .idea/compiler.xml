@@ -15,7 +15,6 @@
         <module name="acf-jda" />
         <module name="acf-paper" />
         <module name="acf-sponge" />
-        <module name="commands" />
         <module name="example-plugin" />
       </profile>
     </annotationProcessing>
@@ -32,5 +31,16 @@
       <module name="commands" target="1.8" />
       <module name="example-plugin" target="1.8" />
     </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="acf-bukkit" options="-parameters" />
+      <module name="acf-bungee" options="-parameters" />
+      <module name="acf-core" options="-parameters" />
+      <module name="acf-jda" options="-parameters" />
+      <module name="acf-paper" options="-parameters" />
+      <module name="acf-sponge" options="-parameters" />
+      <module name="commands" options="-parameters" />
+    </option>
   </component>
 </project>
