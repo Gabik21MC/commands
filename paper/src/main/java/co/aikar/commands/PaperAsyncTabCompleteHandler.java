@@ -65,7 +65,6 @@ class PaperAsyncTabCompleteHandler implements Listener {
             List<String> results = cmd.tabComplete(issuer, commandLabel, args, true);
             event.setCompletions(ACFUtil.preformOnImmutable(
                     event.getCompletions(), (list) -> list.addAll(results)));
-            event.setHandled(true);
         } catch (Exception ignored) {}
     }
 
