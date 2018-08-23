@@ -366,6 +366,7 @@ public abstract class CommandManager <
 
         message = getLocales().replaceI18NStrings(message, issuer);
         message = getCommandReplacements().replace(message);
+        message = getLocales().replaceI18NStrings(message);
 
         MessageFormatter formatter = formatters.getOrDefault(type, defaultFormatter);
         if (formatter != null) {
