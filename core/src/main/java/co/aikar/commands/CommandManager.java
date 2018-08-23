@@ -400,7 +400,7 @@ public abstract class CommandManager <
     }
 
     public Locale getIssuerLocale(CommandIssuer issuer) {
-        if (usingPerIssuerLocale()) {
+        if (usingPerIssuerLocale() && issuer != null) {
             Locale locale = issuersLocale.get(issuer.getUniqueId());
             if (locale != null) {
                 return locale;
