@@ -23,7 +23,11 @@
 
 package co.aikar.commands;
 
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+
+import java.util.Locale;
+import java.util.Objects;
 
 @SuppressWarnings("WeakerAccess")
 public class PaperCommandManager extends BukkitCommandManager {
@@ -37,6 +41,8 @@ public class PaperCommandManager extends BukkitCommandManager {
         } catch (ClassNotFoundException ignored) {
             // Ignored
         }
+        plugin.getServer().getPluginManager().registerEvents(new PaperLocaleChangeHandler(this), plugin);
+        localeTask.cancel();
     }
 
     @Override
@@ -53,5 +59,14 @@ public class PaperCommandManager extends BukkitCommandManager {
             this.completions = new PaperCommandCompletions(this);
         }
         return this.completions;
+    }
+
+    void updateIssuerLocale(Player player, String localeString) {
+        String[] split = ACFPatterns.UNDERSCORE.split(localeString);
+        Locale locale = split.length > 1 ? new Locale(split[0], split[1]) : new Locale(split[0]);
+        Locale prev = issuersLocale.put(player.getUniqueId(), locale);
+        if (!Objects.equals(locale, prev)) {
+            this.notifyLocaleChange(getCommandIssuer(player), prev, locale);
+        }
     }
 }

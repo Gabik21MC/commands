@@ -71,7 +71,7 @@ public class BukkitCommandManager extends CommandManager<
     protected final Plugin plugin;
     private final CommandMap commandMap;
     private final TimingManager timingManager;
-    private final BukkitTask localeTask;
+    protected final BukkitTask localeTask;
     private final Logger logger;
     protected Map<String, Command> knownCommands = new HashMap<>();
     protected Map<String, BukkitRootCommand> registeredCommands = new HashMap<>();
@@ -272,7 +272,7 @@ public class BukkitCommandManager extends CommandManager<
         return this.setIssuerLocale(player, locale);
     }
 
-    void readPlayerLocale(Player player) {
+    public void readPlayerLocale(Player player) {
         if (!player.isOnline() || cantReadLocale) {
             return;
         }

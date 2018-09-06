@@ -71,7 +71,7 @@ class PaperAsyncTabCompleteHandler implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onTabComplete(TabCompleteEvent event) {
         String buffer = event.getBuffer();
-        if (!event.isCommand() && !buffer.startsWith("/")) {
+        if (!buffer.startsWith("/")) {
             return;
         }
         String[] args = ACFPatterns.SPACE.split(buffer, -1);
