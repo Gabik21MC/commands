@@ -364,9 +364,8 @@ public abstract class CommandManager <
             message = ACFUtil.replaceStrings(message, replacements);
         }
 
-        message = getLocales().replaceI18NStrings(message, issuer);
         message = getCommandReplacements().replace(message);
-        message = getLocales().replaceI18NStrings(message);
+        message = getLocales().replaceI18NStrings(message, issuer);
 
         MessageFormatter formatter = formatters.getOrDefault(type, defaultFormatter);
         if (formatter != null) {
