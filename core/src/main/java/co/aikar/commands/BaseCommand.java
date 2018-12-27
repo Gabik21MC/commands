@@ -776,8 +776,7 @@ public abstract class BaseCommand {
             return Collections.emptyList();
         }
 
-        List<String> cmds = manager.getCommandCompletions().of(cmd, issuer, args, isAsync);
-        return filterTabComplete(args[args.length-1], cmds);
+        return manager.getCommandCompletions().of(cmd, issuer, args, isAsync);
     }
 
     /**
@@ -790,11 +789,28 @@ public abstract class BaseCommand {
      *
      * @return All possible options. This may be empty.
      */
-    private static List<String> filterTabComplete(String arg, List<String> cmds) {
+    private static List<String> filterTabComplete(final String arg, List<String> cmds) {
+        String filteredArg = arg;
+        Set<String> alreadyListed = new HashSet<>();
+
+        if (arg.contains(",")) {
+            String[] split = ACFPatterns.COMMA.split(arg);
+            boolean emptyAfterComma = arg.endsWith(",");
+            if (emptyAfterComma) {
+                filteredArg = "";
+            } else {
+                filteredArg = split[split.length - 1];
+            }
+            alreadyListed.addAll(Arrays.asList(split).subList(0, emptyAfterComma ? split.length : split.length - 1));
+        }
+
+        String finalFilteredArg = filteredArg;
         return cmds.stream()
-                   .distinct()
-                   .filter(cmd -> cmd != null && (arg.isEmpty() || ApacheCommonsLangUtil.startsWithIgnoreCase(cmd, arg)))
-                   .collect(Collectors.toList());
+                .distinct()
+                .filter(cmd -> cmd != null && (arg.isEmpty() || ApacheCommonsLangUtil.startsWithIgnoreCase(cmd, finalFilteredArg)))
+                .filter(cmd -> !alreadyListed.contains(cmd))
+                .map(completion -> arg.substring(0, arg.length() - finalFilteredArg.length()) + completion)
+                .collect(Collectors.toList());
     }
 
     /**
