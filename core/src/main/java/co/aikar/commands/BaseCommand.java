@@ -693,8 +693,7 @@ public abstract class BaseCommand {
             return Collections.emptyList();
         }
 
-        List<String> cmds = manager.getCommandCompletions().of(cmd, issuer, args, isAsync);
-        return filterTabComplete(args[args.length - 1], cmds);
+        return manager.getCommandCompletions().of(cmd, issuer, args, isAsync);
     }
 
     /**
