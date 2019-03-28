@@ -47,13 +47,30 @@ public class BukkitRootCommand extends Command implements RootCommand {
     }
 
     @Override
+    public String getDescription() {
+        RegisteredCommand command = getDefaultRegisteredCommand();
+
+        if (command != null && !command.getHelpText().isEmpty()) {
+            return command.getHelpText();
+        }
+        if (command != null && command.scope.description != null) {
+            return command.scope.description;
+        }
+        if (defCommand.description != null) {
+            return defCommand.description;
+        }
+        return super.getDescription();
+    }
+
+    @Override
     public String getCommandName() {
         return name;
     }
 
     @Override
-    public List<String> tabComplete(CommandSender sender, String alias, String[] args) throws IllegalArgumentException {
-        return getTabCompletions(manager.getCommandIssuer(sender), alias, args);
+    public List<String> tabComplete(CommandSender sender, String commandLabel, String[] args) throws IllegalArgumentException {
+        if (commandLabel.contains(":")) commandLabel = ACFPatterns.COLON.split(commandLabel, 2)[1];
+        return getTabCompletions(manager.getCommandIssuer(sender), commandLabel, args);
     }
 
     @Override
@@ -63,14 +80,17 @@ public class BukkitRootCommand extends Command implements RootCommand {
         return true;
     }
 
+    @Override
+    public boolean testPermissionSilent(CommandSender target) {
+        return hasAnyPermission(manager.getCommandIssuer(target));
+    }
+
     public void addChild(BaseCommand command) {
         if (this.defCommand == null || !command.subCommands.get(BaseCommand.DEFAULT).isEmpty()) {
             this.defCommand = command;
-            this.setPermission(command.permission);
-            //this.setDescription(command.getDescription());
-            //this.setUsage(command.getUsage());
         }
         addChildShared(this.children, this.subCommands, command);
+        setPermission(getUniquePermission());
     }
 
     @Override
@@ -89,7 +109,7 @@ public class BukkitRootCommand extends Command implements RootCommand {
     }
 
     @Override
-    public BaseCommand getDefCommand(){
+    public BaseCommand getDefCommand() {
         return defCommand;
     }
 

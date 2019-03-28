@@ -56,8 +56,6 @@ public class CommandHelpFormatter {
 
     public void showDetailedHelp(CommandHelp commandHelp, HelpEntry entry) {
         CommandIssuer issuer = commandHelp.getIssuer();
-        // header
-        printDetailedHelpHeader(commandHelp, issuer, entry);
 
         // normal help line
         printDetailedHelpCommand(commandHelp, issuer, entry);
@@ -69,9 +67,6 @@ public class CommandHelpFormatter {
                 printDetailedParameter(commandHelp, issuer, entry, param);
             }
         }
-
-        // footer
-        printDetailedHelpFooter(commandHelp, issuer, entry);
     }
 
     // ########
@@ -198,6 +193,7 @@ public class CommandHelpFormatter {
         //{name} {description}
         return new String[]{
                 "{name}", param.getName(),
+                "{syntaxorname}", ACFUtil.nullDefault(param.getSyntax(), param.getName()),
                 "{syntax}", ACFUtil.nullDefault(param.getSyntax(), ""),
                 "{description}", ACFUtil.nullDefault(param.getDescription(), ""),
                 "{command}", help.getCommandName(),

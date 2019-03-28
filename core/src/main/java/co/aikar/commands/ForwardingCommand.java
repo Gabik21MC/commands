@@ -25,16 +25,47 @@ package co.aikar.commands;
 
 import co.aikar.commands.apachecommonslang.ApacheCommonsLangUtil;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class ForwardingCommand extends BaseCommand {
     private final BaseCommand command;
     private final String[] baseArgs;
+    private final RegisteredCommand regCommand;
 
-    ForwardingCommand(BaseCommand command, String[] baseArgs) {
-        this.commandName = command.commandName;
-        this.command = command;
+    ForwardingCommand(BaseCommand baseCommand, RegisteredCommand regCommand, String[] baseArgs) {
+        this.regCommand = regCommand;
+        this.commandName = baseCommand.commandName;
+        this.command = baseCommand;
         this.baseArgs = baseArgs;
+        this.manager = baseCommand.manager;
+        this.subCommands.put(DEFAULT, regCommand);
+    }
+
+    @Override
+    public List<RegisteredCommand> getRegisteredCommands() {
+        return Collections.singletonList(regCommand);
+    }
+
+    @Override
+    public CommandOperationContext getLastCommandOperationContext() {
+        return command.getLastCommandOperationContext();
+    }
+
+    @Override
+    public Set<String> getRequiredPermissions() {
+        return command.getRequiredPermissions();
+    }
+
+    @Override
+    public boolean hasPermission(Object issuer) {
+        return command.hasPermission(issuer);
+    }
+
+    @Override
+    public boolean requiresPermission(String permission) {
+        return command.requiresPermission(permission);
     }
 
     @Override
@@ -43,16 +74,17 @@ public class ForwardingCommand extends BaseCommand {
     }
 
     @Override
-    public List<String> tabComplete(CommandIssuer issuer, String alias, String[] args) throws IllegalArgumentException {
-        return command.tabComplete(issuer, alias, ApacheCommonsLangUtil.addAll(baseArgs, args));
+    public List<String> tabComplete(CommandIssuer issuer, RootCommand rootCommand, String[] args, boolean isAsync) throws IllegalArgumentException {
+        return command.tabComplete(issuer, rootCommand, args, isAsync);
     }
 
     @Override
-    public void execute(CommandIssuer issuer, String commandLabel, String[] args) {
-        command.execute(issuer, commandLabel, ApacheCommonsLangUtil.addAll(baseArgs, args));
+    public void execute(CommandIssuer issuer, CommandRouter.CommandRouteResult result) {
+        result = new CommandRouter.CommandRouteResult(regCommand, result.args, ACFUtil.join(baseArgs), result.commandLabel);
+        command.execute(issuer, result);
     }
 
-    BaseCommand getCommand(){
+    BaseCommand getCommand() {
         return command;
     }
 }

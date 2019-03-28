@@ -23,11 +23,13 @@
 
 package co.aikar.commands;
 
+import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Conditions;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Description;
 import co.aikar.commands.annotation.Flags;
 import co.aikar.commands.annotation.Optional;
+import co.aikar.commands.annotation.Single;
 import co.aikar.commands.annotation.Syntax;
 import co.aikar.commands.annotation.Values;
 import co.aikar.commands.contexts.ContextResolver;
@@ -36,10 +38,13 @@ import co.aikar.commands.contexts.IssuerOnlyContextResolver;
 import co.aikar.commands.contexts.OptionalContextResolver;
 
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extends CommandIssuer>> {
+public class CommandParameter<CEC extends CommandExecutionContext<CEC, ? extends CommandIssuer>> {
     private final Parameter parameter;
     private final Class<?> type;
     private final String name;
@@ -48,6 +53,8 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
 
     private ContextResolver<?, CEC> resolver;
     private boolean optional;
+    private Set<String> permissions = new HashSet<>();
+    private String permission;
     private String description;
     private String defaultValue;
     private String syntax;
@@ -58,12 +65,12 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
     private Map<String, String> flags;
     private boolean canConsumeInput;
     private boolean optionalResolver;
+    boolean consumesRest;
 
-    public CommandParameter(RegisteredCommand<CEC> command, Parameter param, int paramIndex) {
+    public CommandParameter(RegisteredCommand<CEC> command, Parameter param, int paramIndex, boolean isLast) {
         this.parameter = param;
         this.type = param.getType();
         this.name = param.getName(); // do we care for an annotation to supply name?
-        //noinspection unchecked
         this.manager = command.manager;
         this.paramIndex = paramIndex;
         Annotations annotations = manager.getAnnotations();
@@ -80,12 +87,14 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
             ));
         }
 
-        this.optional = annotations.hasAnnotation(param, Optional.class) || this.defaultValue != null;
+        this.optional = annotations.hasAnnotation(param, Optional.class) || this.defaultValue != null || (isLast && type == String[].class);
+        this.permission = annotations.getAnnotationValue(param, CommandPermission.class, Annotations.REPLACEMENTS | Annotations.NO_EMPTY);
         this.optionalResolver = isOptionalResolver(resolver);
         this.requiresInput = !this.optional && !this.optionalResolver;
         //noinspection unchecked
         this.commandIssuer = paramIndex == 0 && manager.isCommandIssuer(type);
         this.canConsumeInput = !this.commandIssuer && !(resolver instanceof IssuerOnlyContextResolver);
+        this.consumesRest = (type == String.class && !annotations.hasAnnotation(param, Single.class)) || (isLast && type == String[].class);
 
         this.values = annotations.getAnnotationValues(param, Values.class, Annotations.REPLACEMENTS | Annotations.NO_EMPTY);
 
@@ -107,6 +116,7 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
             parseFlags(flags);
         }
         inheritContextFlags(command.scope);
+        this.computePermissions();
     }
 
     private void inheritContextFlags(BaseCommand scope) {
@@ -132,10 +142,17 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
         }
     }
 
+    private void computePermissions() {
+        this.permissions.clear();
+        if (this.permission != null && !this.permission.isEmpty()) {
+            this.permissions.addAll(Arrays.asList(ACFPatterns.COMMA.split(this.permission)));
+        }
+    }
+
     private boolean isOptionalResolver(ContextResolver<?, CEC> resolver) {
         return resolver instanceof IssuerAwareContextResolver
-            || resolver instanceof IssuerOnlyContextResolver
-            || resolver instanceof OptionalContextResolver;
+                || resolver instanceof IssuerOnlyContextResolver
+                || resolver instanceof OptionalContextResolver;
     }
 
 
@@ -253,5 +270,9 @@ public class CommandParameter <CEC extends CommandExecutionContext<CEC, ? extend
 
     public void setConditions(String conditions) {
         this.conditions = conditions;
+    }
+
+    public Set<String> getRequiredPermissions() {
+        return permissions;
     }
 }

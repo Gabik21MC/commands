@@ -134,6 +134,14 @@
 </tr>
 <tbody>
 <tr class="altColor">
+<td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../co/aikar/commands/RegisteredCommand.html" title="class in co.aikar.commands">RegisteredCommand</a>&gt;</code></td>
+<td class="colLast"><span class="typeNameLabel">BaseCommand.</span><code><span class="memberNameLink"><a href="../../../../co/aikar/commands/BaseCommand.html#getRegisteredCommands--">getRegisteredCommands</a></span>()</code>&nbsp;</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code><a href="https://docs.oracle.com/javase/8/docs/api/java/util/List.html?is-external=true" title="class or interface in java.util">List</a>&lt;<a href="../../../../co/aikar/commands/RegisteredCommand.html" title="class in co.aikar.commands">RegisteredCommand</a>&gt;</code></td>
+<td class="colLast"><span class="typeNameLabel">ForwardingCommand.</span><code><span class="memberNameLink"><a href="../../../../co/aikar/commands/ForwardingCommand.html#getRegisteredCommands--">getRegisteredCommands</a></span>()</code>&nbsp;</td>
+</tr>
+<tr class="altColor">
 <td class="colFirst"><code>com.google.common.collect.SetMultimap&lt;<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</a>,<a href="../../../../co/aikar/commands/RegisteredCommand.html" title="class in co.aikar.commands">RegisteredCommand</a>&gt;</code></td>
 <td class="colLast"><span class="typeNameLabel">RootCommand.</span><code><span class="memberNameLink"><a href="../../../../co/aikar/commands/RootCommand.html#getSubCommands--">getSubCommands</a></span>()</code>&nbsp;</td>
 </tr>
@@ -241,9 +249,10 @@
 </tr>
 <tbody>
 <tr class="altColor">
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../../co/aikar/commands/CommandParameter.html#CommandParameter-co.aikar.commands.RegisteredCommand-java.lang.reflect.Parameter-int-">CommandParameter</a></span>(<a href="../../../../co/aikar/commands/RegisteredCommand.html" title="class in co.aikar.commands">RegisteredCommand</a>&lt;<a href="../../../../co/aikar/commands/CommandParameter.html" title="type parameter in CommandParameter">CEC</a>&gt;&nbsp;command,
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../../co/aikar/commands/CommandParameter.html#CommandParameter-co.aikar.commands.RegisteredCommand-java.lang.reflect.Parameter-int-boolean-">CommandParameter</a></span>(<a href="../../../../co/aikar/commands/RegisteredCommand.html" title="class in co.aikar.commands">RegisteredCommand</a>&lt;<a href="../../../../co/aikar/commands/CommandParameter.html" title="type parameter in CommandParameter">CEC</a>&gt;&nbsp;command,
                 <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/reflect/Parameter.html?is-external=true" title="class or interface in java.lang.reflect">Parameter</a>&nbsp;param,
-                int&nbsp;paramIndex)</code>&nbsp;</td>
+                int&nbsp;paramIndex,
+                boolean&nbsp;isLast)</code>&nbsp;</td>
 </tr>
 </tbody>
 </table>
@@ -298,6 +307,6 @@
 <!--   -->
 </a></div>
 <!-- ======== END OF BOTTOM NAVBAR ======= -->
-<p class="legalCopy"><small>Copyright &#169; 2018. All rights reserved.</small></p>
+<p class="legalCopy"><small>Copyright &#169; 2019. All rights reserved.</small></p>
 </body>
 </html>

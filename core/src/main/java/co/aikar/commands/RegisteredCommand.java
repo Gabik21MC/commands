@@ -34,13 +34,13 @@ import co.aikar.commands.annotation.Syntax;
 import co.aikar.commands.contexts.ContextResolver;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
-public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? extends CommandIssuer>> {
+public class RegisteredCommand<CEC extends CommandExecutionContext<CEC, ? extends CommandIssuer>> {
     final BaseCommand scope;
     final Method method;
     final CommandParameter<CEC>[] parameters;
@@ -72,6 +72,8 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
     final int doesNotConsumeInputResolvers;
     final int optionalResolvers;
 
+    final Set<String> permissions = new HashSet<>();
+
     RegisteredCommand(BaseCommand scope, String command, Method method, String prefSubCommand) {
         this.scope = scope;
         this.manager = this.scope.manager;
@@ -86,7 +88,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
         this.prefSubCommand = prefSubCommand;
 
         this.permission = annotations.getAnnotationValue(method, CommandPermission.class, Annotations.REPLACEMENTS | Annotations.NO_EMPTY);
-        this.complete = annotations.getAnnotationValue(method, CommandCompletion.class);
+        this.complete = annotations.getAnnotationValue(method, CommandCompletion.class, Annotations.DEFAULT_EMPTY); // no replacements as it should be per-issuer
         this.helpText = annotations.getAnnotationValue(method, Description.class, Annotations.REPLACEMENTS | Annotations.DEFAULT_EMPTY);
         this.conditions = annotations.getAnnotationValue(method, Conditions.class, Annotations.REPLACEMENTS | Annotations.NO_EMPTY);
         this.helpSearchTags = annotations.getAnnotationValue(method, HelpSearchTags.class, Annotations.REPLACEMENTS | Annotations.NO_EMPTY);
@@ -95,7 +97,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
         //noinspection unchecked
         this.parameters = new CommandParameter[parameters.length];
 
-        this.isPrivate = annotations.hasAnnotation(method, Private.class);
+        this.isPrivate = annotations.hasAnnotation(method, Private.class) || annotations.getAnnotationFromClass(scope.getClass(), Private.class) != null;
 
         int requiredResolvers = 0;
         int consumeInputResolvers = 0;
@@ -104,7 +106,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
         StringBuilder syntaxBuilder = new StringBuilder(64);
 
         for (int i = 0; i < parameters.length; i++) {
-            CommandParameter<CEC> parameter = this.parameters[i] = new CommandParameter<>(this, parameters[i], i);
+            CommandParameter<CEC> parameter = this.parameters[i] = new CommandParameter<>(this, parameters[i], i, i == parameters.length - 1);
             if (!parameter.isCommandIssuer()) {
                 if (!parameter.requiresInput()) {
                     optionalResolvers++;
@@ -131,6 +133,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
         this.consumeInputResolvers = consumeInputResolvers;
         this.doesNotConsumeInputResolvers = doesNotConsumeInputResolvers;
         this.optionalResolvers = optionalResolvers;
+        this.computePermissions();
     }
 
 
@@ -147,11 +150,16 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
             method.invoke(scope, passedArgs.values().toArray());
         } catch (Exception e) {
             handleException(sender, args, e);
+        } finally {
+            postCommand();
         }
-        postCommand();
     }
-    public void preCommand() {}
-    public void postCommand() {}
+
+    public void preCommand() {
+    }
+
+    public void postCommand() {
+    }
 
     void handleException(CommandIssuer sender, List<String> args, Exception e) {
         if (e instanceof InvocationTargetException && e.getCause() instanceof InvalidCommandArgument) {
@@ -194,6 +202,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
     Map<String, Object> resolveContexts(CommandIssuer sender, List<String> args) throws InvalidCommandArgument {
         return resolveContexts(sender, args, parameters.length);
     }
+
     @Nullable
     Map<String, Object> resolveContexts(CommandIssuer sender, List<String> args, int argLimit) throws InvalidCommandArgument {
         args = new ArrayList<>(args);
@@ -205,7 +214,7 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
             boolean isLast = i == parameters.length - 1;
             boolean allowOptional = remainingRequired == 0;
             final CommandParameter<CEC> parameter = parameters[i];
-            if (parameter.isCommandIssuer()) {
+            if (!parameter.canConsumeInput()) {
                 argLimit++;
             }
             final String parameterName = parameter.getName();
@@ -218,30 +227,46 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
             if (requiresInput && remainingRequired > 0) {
                 remainingRequired--;
             }
+
+            Set<String> parameterPermissions = parameter.getRequiredPermissions();
             if (args.isEmpty() && !(isLast && type == String[].class)) {
                 if (allowOptional && parameter.getDefaultValue() != null) {
                     args.add(parameter.getDefaultValue());
                 } else if (allowOptional && parameter.isOptional()) {
-                    Object value = parameter.isOptionalResolver() ? resolver.getContext(context) : null;
+                    Object value;
+                    if (!parameter.isOptionalResolver() || !this.manager.hasPermission(sender, parameterPermissions)) {
+                       value = null;
+                    } else {
+                       value = resolver.getContext(context);
+                    }
+
                     if (value == null && parameter.getClass().isPrimitive()) {
                         throw new IllegalStateException("Parameter " + parameter.getName() + " is primitive and does not support Optional.");
                     }
                     //noinspection unchecked
                     this.manager.conditions.validateConditions(context, value);
                     passedArgs.put(parameterName, value);
-                    //noinspection UnnecessaryContinue
                     continue;
                 } else if (requiresInput) {
                     scope.showSyntax(sender, this);
                     return null;
                 }
+            } else {
+                if (!this.manager.hasPermission(sender, parameterPermissions)) {
+                    sender.sendMessage(MessageType.ERROR, MessageKeys.PERMISSION_DENIED_PARAMETER, "{param}", parameterName);
+                    throw new InvalidCommandArgument(false);
+                }
             }
+
             if (parameter.getValues() != null) {
                 String arg = !args.isEmpty() ? args.get(0) : "";
 
                 Set<String> possible = new HashSet<>();
                 CommandCompletions commandCompletions = this.manager.getCommandCompletions();
                 for (String s : parameter.getValues()) {
+                    if ("*".equals(s) || "@completions".equals(s)) {
+                        s = commandCompletions.findDefaultCompletion(this, origArgs);
+                    }
                     //noinspection unchecked
                     List<String> check = commandCompletions.getCompletionValues(this, sender, s, origArgs, opContext.isAsync());
                     if (!check.isEmpty()) {
@@ -250,13 +275,14 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
                         possible.add(s.toLowerCase());
                     }
                 }
-
                 if (!possible.contains(arg.toLowerCase())) {
                     throw new InvalidCommandArgument(MessageKeys.PLEASE_SPECIFY_ONE_OF,
                             "{valid}", ACFUtil.join(possible, ", "));
                 }
             }
+
             Object paramValue = resolver.getContext(context);
+
             //noinspection unchecked
             this.manager.conditions.validateConditions(context, paramValue);
             passedArgs.put(parameterName, paramValue);
@@ -265,9 +291,8 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
     }
 
     boolean hasPermission(CommandIssuer issuer) {
-        return (permission == null || permission.isEmpty() || scope.manager.hasPermission(issuer, permission)) && scope.hasPermission(issuer);
+        return this.manager.hasPermission(issuer, getRequiredPermissions());
     }
-
 
     /**
      * @see #getRequiredPermissions()
@@ -281,15 +306,20 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
         return ACFPatterns.COMMA.split(this.permission)[0];
     }
 
-    public Set<String> getRequiredPermissions() {
-        if (this.permission == null || this.permission.isEmpty()) {
-            return Collections.emptySet();
+    void computePermissions() {
+        this.permissions.clear();
+        this.permissions.addAll(this.scope.getRequiredPermissions());
+        if (this.permission != null && !this.permission.isEmpty()) {
+            this.permissions.addAll(Arrays.asList(ACFPatterns.COMMA.split(this.permission)));
         }
-        return new HashSet<>(Arrays.asList(ACFPatterns.COMMA.split(this.permission)));
+    }
+
+    public Set<String> getRequiredPermissions() {
+        return this.permissions;
     }
 
     public boolean requiresPermission(String permission) {
-        return getRequiredPermissions().contains(permission) || scope.requiresPermission(permission);
+        return getRequiredPermissions().contains(permission);
     }
 
     public String getPrefSubCommand() {
@@ -299,11 +329,11 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
     public String getSyntaxText() {
         return syntaxText;
     }
-    
+
     public String getHelpText() {
         return helpText != null ? helpText : "";
     }
-    
+
     public boolean isPrivate() {
         return isPrivate;
     }
@@ -315,7 +345,12 @@ public class RegisteredCommand <CEC extends CommandExecutionContext<CEC, ? exten
     public void addSubcommand(String cmd) {
         this.registeredSubcommands.add(cmd);
     }
+
     public void addSubcommands(Collection<String> cmd) {
         this.registeredSubcommands.addAll(cmd);
+    }
+
+    public <T extends Annotation> T getAnnotation(Class<T> annotation) {
+        return method.getAnnotation(annotation);
     }
 }
