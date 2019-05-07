@@ -520,6 +520,7 @@ public abstract class BaseCommand {
      */
     private void postCommandOperation() {
         CommandManager.commandOperationContext.get().pop();
+        lastCommandOperationContext.remove();
         execSubcommand = null;
         execLabel = null;
         origArgs = new String[]{};
